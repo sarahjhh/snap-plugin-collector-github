@@ -1,0 +1,27 @@
+{
+    "version": 1,
+    "schedule": {
+        "type": "simple",
+        "interval": "10ms"
+    },
+    "workflow": {
+        "collect": {
+            "metrics": {
+                "/random/float": {},
+                "/random/integer": {},
+                "/random/string":{}
+            },
+            "config": {},
+            "process": null,
+            "publish": [
+                {
+                "plugin_name": "file",
+                            "config": {
+                                "file": "/tmp/collector_github"
+                            }
+                    }
+                
+            ]             
+        }
+    }
+}

@@ -136,24 +136,33 @@ func (RandCollector) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) 
 func (RandCollector) GetConfigPolicy() (plugin.ConfigPolicy, error) {
 	policy := plugin.NewConfigPolicy()
 
-	policy.AddNewIntRule([]string{"random", "integer"},
+	ir, _ := plugin.NewIntegerRule(
 		"testint",
 		false,
 		plugin.SetMaxInt(1000),
 		plugin.SetMinInt(0))
 
-	policy.AddNewFloatRule([]string{"random", "float"},
+	policy.AddIntRule([]string{"random", "integer"}, ir)
+
+	fr, _ := plugin.NewFloatRule(
 		"testfloat",
 		false,
 		plugin.SetMaxFloat(1000.0),
 		plugin.SetMinFloat(0.0))
 
-	policy.AddNewStringRule([]string{"random", "string"},
+	policy.AddFloatRule([]string{"random", "float"}, fr)
+
+	sr, _ := plugin.NewStringRule(
 		"teststring",
 		false)
 
-	policy.AddNewBoolRule([]string{"random"},
+	policy.AddStringRule([]string{"random", "string"}, sr)
+
+	br, _ := plugin.NewBoolRule(
 		"testbool",
 		false)
+
+	policy.AddBoolRule([]string{"random"}, br)
+
 	return *policy, nil
 }
