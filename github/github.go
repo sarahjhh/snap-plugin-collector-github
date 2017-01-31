@@ -20,44 +20,21 @@ limitations under the License.
 package github
 
 import (
-	"fmt"
-	"math/rand"
+	"strings"
+
 	"time"
 
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
-var (
-	strs = []string{
-		"It is certain",
-		"It is decidedly so",
-		"Without a doubt",
-		"Yes definitely",
-		"You may rely on it",
-		"As I see it yes",
-		"Most likely",
-		"Outlook good",
-		"Yes",
-		"Signs point to yes",
-		"Reply hazy try again",
-		"Ask again later",
-		"Better not tell you now",
-		"Cannot predict now",
-		"Concentrate and ask again",
-		"Don't count on it",
-		"My reply is no",
-		"My sources say no",
-		"Outlook not so good",
-		"Very doubtful",
-	}
-)
-
-func init() {
-	rand.Seed(42)
+// Collector struct type
+type Collector struct {
+	client Client
 }
 
-// Mock collector implementation used for testing
-type RandCollector struct {
+// NewCollector creates a instance of Github collector.
+func NewCollector() Collector {
+	return Collector{client: NewClient(time.Second * 5)}
 }
 
 /*  CollectMetrics collects metrics for testing.
@@ -67,38 +44,22 @@ GetMetricTypes() is started. The input will include a slice of all the metric ty
 
 The output is the collected metrics as plugin.Metric and an error.
 */
-func (RandCollector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
+func (c Collector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 	metrics := []plugin.Metric{}
-	for idx, mt := range mts {
-		mts[idx].Timestamp = time.Now()
-		if val, err := mt.Config.GetBool("testbool"); err == nil && val {
-			continue
-		}
-		if mt.Namespace[len(mt.Namespace)-1].Value == "integer" {
-			if val, err := mt.Config.GetInt("testint"); err == nil {
-				mts[idx].Data = val
-			} else {
-				mts[idx].Data = rand.Int31()
-			}
-			metrics = append(metrics, mts[idx])
-		} else if mt.Namespace[len(mt.Namespace)-1].Value == "float" {
-			if val, err := mt.Config.GetFloat("testfloat"); err == nil {
-				mts[idx].Data = val
-			} else {
-				mts[idx].Data = rand.Float64()
-			}
-			metrics = append(metrics, mts[idx])
-		} else if mt.Namespace[len(mt.Namespace)-1].Value == "string" {
-			if val, err := mt.Config.GetString("teststring"); err == nil {
-				mts[idx].Data = val
-			} else {
-				mts[idx].Data = strs[rand.Intn(len(strs)-1)]
-			}
-			metrics = append(metrics, mts[idx])
-		} else {
-			return nil, fmt.Errorf("Invalid metric: %v", mt.Namespace.Strings())
-		}
+
+	user, err := mts[0].Config.GetString("user")
+	if err != nil {
+		return nil, err
 	}
+
+	mp, err := c.client.getMetricData(user)
+	for _, mt := range mts {
+		ns := mt.Namespace.Strings()
+		ns[3] = user
+		nss := strings.Join(ns, "/")
+		metrics = append(metrics, mp[nss])
+	}
+
 	return metrics, nil
 }
 
@@ -111,19 +72,13 @@ func (RandCollector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error
 
 	The metrics returned will be advertised to users who list all the metrics and will become targetable by tasks.
 */
-func (RandCollector) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
-	metrics := []plugin.Metric{}
-
-	vals := []string{"integer", "float", "string"}
-	for _, val := range vals {
-		metric := plugin.Metric{
-			Namespace: plugin.NewNamespace("random", val),
-			Version:   1,
-		}
-		metrics = append(metrics, metric)
+func (c Collector) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
+	user, err := cfg.GetString("user")
+	if err != nil {
+		return nil, err
 	}
 
-	return metrics, nil
+	return c.client.getMetricTypes(user)
 }
 
 /*
@@ -133,16 +88,9 @@ func (RandCollector) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) 
 	plugin. Here you define what sorts of config info your plugin
 	needs and/or requires.
 */
-func (RandCollector) GetConfigPolicy() (plugin.ConfigPolicy, error) {
+func (c Collector) GetConfigPolicy() (plugin.ConfigPolicy, error) {
 	policy := plugin.NewConfigPolicy()
+	policy.AddNewStringRule([]string{""}, "user", false, plugin.SetDefaultString("sarahjhh"))
 
-	policy.AddNewIntRule([]string{""}, "testint", false, plugin.SetMaxInt(1000), plugin.SetMinInt(0))
-
-	policy.AddNewFloatRule([]string{""}, "testfloat", false, plugin.SetMaxFloat(1000), plugin.SetMinFloat(0))
-
-	policy.AddNewStringRule([]string{""}, "teststring", false)
-
-	policy.AddNewBoolRule([]string{""}, "testbool", false)
 	return *policy, nil
-
 }

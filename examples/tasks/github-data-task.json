@@ -1,0 +1,31 @@
+{
+    "version": 1,
+    "schedule": {
+        "type": "simple",
+        "interval": "10ms"
+    },
+    "workflow": {
+        "collect": {
+            "metrics": {
+                "/intel/github/user/*/login": {},
+                "/intel/github/user/*/name": {},
+                "/intel/github/user/*/organizations_url":{}
+            },
+            "config": {
+                "/intel/github": {
+                   "user": "sarahjhh"
+                }
+            },
+            "process": null,
+            "publish": [
+                {
+                "plugin_name": "file",
+                            "config": {
+                                "file": "/tmp/collector_github"
+                            }
+                    }
+                
+            ]             
+        }
+    }
+}

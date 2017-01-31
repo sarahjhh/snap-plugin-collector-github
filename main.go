@@ -20,15 +20,15 @@ limitations under the License.
 package main
 
 import (
-	"github.com/intelsdi-x/snap-plugin-lib-go/examples/collector/rand"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
+	"github.com/sarahjhh/snap-plugin-collector-github/github"
 )
 
 const (
-	pluginName    = "test-github-collector"
+	pluginName    = "github-collector"
 	pluginVersion = 1
 )
 
 func main() {
-	plugin.StartCollector(rand.RandCollector{}, pluginName, pluginVersion)
+	plugin.StartCollector(github.NewCollector(), pluginName, pluginVersion)
 }
